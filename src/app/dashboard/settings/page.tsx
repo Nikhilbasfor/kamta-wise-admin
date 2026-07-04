@@ -191,6 +191,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("announcement");
 
   useEffect(() => {
     async function fetchSettings() {
@@ -445,8 +446,35 @@ export default function SettingsPage() {
         </div>
 
         {/* Tabs System */}
-        <Tabs defaultValue="announcement" className="w-full">
-          <TabsList className="grid grid-cols-1 md:grid-cols-6 bg-slate-900 border border-slate-800 text-slate-400 p-1 rounded-xl">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {/* Mobile Dropdown Navigation */}
+          <div className="md:hidden space-y-1.5 mb-4">
+            <label className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold block">
+              Select Settings Module:
+            </label>
+            <div className="relative">
+              <select
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-750 text-slate-100 text-xs font-semibold uppercase tracking-wider rounded-xl px-4 py-3.5 focus:outline-none focus:border-slate-500 appearance-none shadow-md cursor-pointer"
+              >
+                <option value="announcement">📢 Announcement Bar</option>
+                <option value="hero">🖼️ Hero Banner Slides</option>
+                <option value="shipping">🚚 Shipping & Contacts</option>
+                <option value="story">📖 Brand Story</option>
+                <option value="policies">📜 Policies & FAQs</option>
+                <option value="lookbook">✨ Summer Lookbook 2026</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l0.707 0.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Tab Buttons List */}
+          <TabsList className="hidden md:grid grid-cols-6 bg-slate-900 border border-slate-800 text-slate-400 p-1 rounded-xl">
             <TabsTrigger value="announcement" className="text-xs uppercase tracking-wider py-2">
               Announcement
             </TabsTrigger>
