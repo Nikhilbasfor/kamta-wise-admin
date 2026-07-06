@@ -18,7 +18,8 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -35,10 +36,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Users", href: "/dashboard/users", icon: Users },
     { name: "Contact Messages", href: "/dashboard/messages", icon: Mail },
     { name: "Newsletter", href: "/dashboard/newsletter", icon: FileText },
+    { name: "Influencers", href: "/dashboard/influencers", icon: Sparkles },
     { name: "Site Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
   const [unreadCount, setUnreadCount] = React.useState(0);
+  const [pendingInfCount, setPendingInfCount] = React.useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   // Close mobile menu on path change
@@ -57,6 +60,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setUnreadCount(snapshot.size);
       }, (err) => {
         console.error("Error subscribing to contact messages count:", err);
+      });
+      return () => unsubscribe();
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+  React.useEffect(() => {
+    if (!user) return;
+    try {
+      const q = query(
+        collection(db, "influencerApplications"), 
+        where("status", "==", "pending")
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        setPendingInfCount(snapshot.size);
+      }, (err) => {
+        console.error("Error subscribing to influencer applications count:", err);
       });
       return () => unsubscribe();
     } catch (e) {
@@ -104,6 +125,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {item.name === "Contact Messages" && unreadCount > 0 && (
                     <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full font-mono">
                       {unreadCount}
+                    </span>
+                  )}
+                  {item.name === "Influencers" && pendingInfCount > 0 && (
+                    <span className="bg-amber-500 text-slate-950 text-[9px] font-bold px-1.5 py-0.5 rounded-full font-mono">
+                      {pendingInfCount}
                     </span>
                   )}
                 </Link>
@@ -178,6 +204,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       {item.name === "Contact Messages" && unreadCount > 0 && (
                         <span className="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full font-mono">
                           {unreadCount}
+                        </span>
+                      )}
+                      {item.name === "Influencers" && pendingInfCount > 0 && (
+                        <span className="bg-amber-500 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-full font-mono">
+                          {pendingInfCount}
                         </span>
                       )}
                     </Link>
