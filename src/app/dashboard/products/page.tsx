@@ -62,6 +62,9 @@ interface Product {
   category: string;
   price: number;
   discountedPrice?: number | null;
+  shippingCharge?: number | null;
+  processingCharge?: number | null;
+  packagingCharge?: number | null;
   description: string;
   fabric: string;
   fit: string;
@@ -84,6 +87,9 @@ interface ProductFormData {
   category: string;
   price: number;
   discountedPrice: number | "";
+  shippingCharge: number | "";
+  processingCharge: number | "";
+  packagingCharge: number | "";
   description: string;
   fabric: string;
   fit: string;
@@ -110,6 +116,9 @@ const getInitialFormData = (): ProductFormData => ({
   category: "",
   price: 0,
   discountedPrice: "",
+  shippingCharge: "",
+  processingCharge: "",
+  packagingCharge: "",
   description: "",
   fabric: "",
   fit: "",
@@ -233,6 +242,9 @@ export default function ProductsPage() {
       category: product.category || "",
       price: product.price || 0,
       discountedPrice: product.discountedPrice ?? "",
+      shippingCharge: product.shippingCharge ?? "",
+      processingCharge: product.processingCharge ?? "",
+      packagingCharge: product.packagingCharge ?? "",
       description: product.description || "",
       fabric: product.fabric || "",
       fit: product.fit || "",
@@ -307,6 +319,24 @@ export default function ProductsPage() {
         isActive: formData.isActive,
         images: cleanImages,
       };
+
+      if (formData.shippingCharge !== "" && formData.shippingCharge !== null && formData.shippingCharge !== undefined) {
+        payload.shippingCharge = Number(formData.shippingCharge);
+      } else {
+        payload.shippingCharge = null;
+      }
+
+      if (formData.processingCharge !== "" && formData.processingCharge !== null && formData.processingCharge !== undefined) {
+        payload.processingCharge = Number(formData.processingCharge);
+      } else {
+        payload.processingCharge = null;
+      }
+
+      if (formData.packagingCharge !== "" && formData.packagingCharge !== null && formData.packagingCharge !== undefined) {
+        payload.packagingCharge = Number(formData.packagingCharge);
+      } else {
+        payload.packagingCharge = null;
+      }
 
       if (formData.promoDiscount !== "" && formData.promoDiscount !== null && formData.promoDiscount !== undefined) {
         payload.promoDiscount = Number(formData.promoDiscount);
@@ -494,7 +524,14 @@ export default function ProductsPage() {
 
                       {/* Regular Price */}
                       <TableCell className="py-3 text-slate-200 text-xs">
-                        {formatPrice(product.price)}
+                        <div>{formatPrice(product.price)}</div>
+                        {(product.shippingCharge || product.processingCharge || product.packagingCharge) ? (
+                          <div className="text-[9px] text-slate-500 mt-1 font-sans space-y-0.5 leading-none">
+                            {product.shippingCharge ? <div>Ship: +₹{product.shippingCharge}</div> : null}
+                            {product.processingCharge ? <div>Proc: +₹{product.processingCharge}</div> : null}
+                            {product.packagingCharge ? <div>Pkg: +₹{product.packagingCharge}</div> : null}
+                          </div>
+                        ) : null}
                       </TableCell>
 
                       {/* Discount Price */}
@@ -693,6 +730,52 @@ export default function ProductsPage() {
                         placeholder="1599"
                         value={formData.discountedPrice}
                         onChange={(e) => setFormData(prev => ({ ...prev, discountedPrice: e.target.value === "" ? "" : Number(e.target.value) }))}
+                        className="bg-slate-950 border-slate-800 text-slate-100 text-xs placeholder:text-slate-800"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Shipping, Processing & Packaging Charges */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="prod-shipping" className="text-[9px] uppercase tracking-wider text-slate-400">
+                        Shipping (₹)
+                      </Label>
+                      <Input
+                        id="prod-shipping"
+                        type="number"
+                        placeholder="0"
+                        value={formData.shippingCharge}
+                        onChange={(e) => setFormData(prev => ({ ...prev, shippingCharge: e.target.value === "" ? "" : Number(e.target.value) }))}
+                        className="bg-slate-950 border-slate-800 text-slate-100 text-xs placeholder:text-slate-800"
+                        min="0"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="prod-processing" className="text-[9px] uppercase tracking-wider text-slate-400">
+                        Processing (₹)
+                      </Label>
+                      <Input
+                        id="prod-processing"
+                        type="number"
+                        placeholder="0"
+                        value={formData.processingCharge}
+                        onChange={(e) => setFormData(prev => ({ ...prev, processingCharge: e.target.value === "" ? "" : Number(e.target.value) }))}
+                        className="bg-slate-950 border-slate-800 text-slate-100 text-xs placeholder:text-slate-800"
+                        min="0"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="prod-packaging" className="text-[9px] uppercase tracking-wider text-slate-400">
+                        Packaging (₹)
+                      </Label>
+                      <Input
+                        id="prod-packaging"
+                        type="number"
+                        placeholder="0"
+                        value={formData.packagingCharge}
+                        onChange={(e) => setFormData(prev => ({ ...prev, packagingCharge: e.target.value === "" ? "" : Number(e.target.value) }))}
                         className="bg-slate-950 border-slate-800 text-slate-100 text-xs placeholder:text-slate-800"
                         min="0"
                       />
