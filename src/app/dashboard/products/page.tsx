@@ -65,6 +65,9 @@ interface Product {
   shippingCharge?: number | null;
   processingCharge?: number | null;
   packagingCharge?: number | null;
+  shippingChargeEnabled?: boolean;
+  processingChargeEnabled?: boolean;
+  packagingChargeEnabled?: boolean;
   description: string;
   fabric: string;
   fit: string;
@@ -90,6 +93,9 @@ interface ProductFormData {
   shippingCharge: number | "";
   processingCharge: number | "";
   packagingCharge: number | "";
+  shippingChargeEnabled: boolean;
+  processingChargeEnabled: boolean;
+  packagingChargeEnabled: boolean;
   description: string;
   fabric: string;
   fit: string;
@@ -119,6 +125,9 @@ const getInitialFormData = (): ProductFormData => ({
   shippingCharge: "",
   processingCharge: "",
   packagingCharge: "",
+  shippingChargeEnabled: false,
+  processingChargeEnabled: false,
+  packagingChargeEnabled: false,
   description: "",
   fabric: "",
   fit: "",
@@ -245,6 +254,9 @@ export default function ProductsPage() {
       shippingCharge: product.shippingCharge ?? "",
       processingCharge: product.processingCharge ?? "",
       packagingCharge: product.packagingCharge ?? "",
+      shippingChargeEnabled: !!product.shippingChargeEnabled,
+      processingChargeEnabled: !!product.processingChargeEnabled,
+      packagingChargeEnabled: !!product.packagingChargeEnabled,
       description: product.description || "",
       fabric: product.fabric || "",
       fit: product.fit || "",
@@ -318,6 +330,9 @@ export default function ProductsPage() {
         isBestseller: formData.isBestseller,
         isActive: formData.isActive,
         images: cleanImages,
+        shippingChargeEnabled: formData.shippingChargeEnabled,
+        processingChargeEnabled: formData.processingChargeEnabled,
+        packagingChargeEnabled: formData.packagingChargeEnabled,
       };
 
       if (formData.shippingCharge !== "" && formData.shippingCharge !== null && formData.shippingCharge !== undefined) {
@@ -525,11 +540,13 @@ export default function ProductsPage() {
                       {/* Regular Price */}
                       <TableCell className="py-3 text-slate-200 text-xs">
                         <div>{formatPrice(product.price)}</div>
-                        {(product.shippingCharge || product.processingCharge || product.packagingCharge) ? (
+                        {((product.shippingChargeEnabled && product.shippingCharge) || 
+                          (product.processingChargeEnabled && product.processingCharge) || 
+                          (product.packagingChargeEnabled && product.packagingCharge)) ? (
                           <div className="text-[9px] text-slate-500 mt-1 font-sans space-y-0.5 leading-none">
-                            {product.shippingCharge ? <div>Ship: +₹{product.shippingCharge}</div> : null}
-                            {product.processingCharge ? <div>Proc: +₹{product.processingCharge}</div> : null}
-                            {product.packagingCharge ? <div>Pkg: +₹{product.packagingCharge}</div> : null}
+                            {product.shippingChargeEnabled && product.shippingCharge ? <div>Ship: +₹{product.shippingCharge}</div> : null}
+                            {product.processingChargeEnabled && product.processingCharge ? <div>Proc: +₹{product.processingCharge}</div> : null}
+                            {product.packagingChargeEnabled && product.packagingCharge ? <div>Pkg: +₹{product.packagingCharge}</div> : null}
                           </div>
                         ) : null}
                       </TableCell>
@@ -737,48 +754,75 @@ export default function ProductsPage() {
                   </div>
 
                   {/* Shipping, Processing & Packaging Charges */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="prod-shipping" className="text-[9px] uppercase tracking-wider text-slate-400">
-                        Shipping (₹)
-                      </Label>
-                      <Input
-                        id="prod-shipping"
-                        type="number"
-                        placeholder="0"
-                        value={formData.shippingCharge}
-                        onChange={(e) => setFormData(prev => ({ ...prev, shippingCharge: e.target.value === "" ? "" : Number(e.target.value) }))}
-                        className="bg-slate-950 border-slate-800 text-slate-100 text-xs placeholder:text-slate-800"
-                        min="0"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="prod-processing" className="text-[9px] uppercase tracking-wider text-slate-400">
-                        Processing (₹)
-                      </Label>
-                      <Input
-                        id="prod-processing"
-                        type="number"
-                        placeholder="0"
-                        value={formData.processingCharge}
-                        onChange={(e) => setFormData(prev => ({ ...prev, processingCharge: e.target.value === "" ? "" : Number(e.target.value) }))}
-                        className="bg-slate-950 border-slate-800 text-slate-100 text-xs placeholder:text-slate-800"
-                        min="0"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="prod-packaging" className="text-[9px] uppercase tracking-wider text-slate-400">
-                        Packaging (₹)
-                      </Label>
-                      <Input
-                        id="prod-packaging"
-                        type="number"
-                        placeholder="0"
-                        value={formData.packagingCharge}
-                        onChange={(e) => setFormData(prev => ({ ...prev, packagingCharge: e.target.value === "" ? "" : Number(e.target.value) }))}
-                        className="bg-slate-950 border-slate-800 text-slate-100 text-xs placeholder:text-slate-800"
-                        min="0"
-                      />
+                  <div className="space-y-2 p-3 bg-slate-950/40 border border-slate-800/80 rounded-lg">
+                    <Label className="text-[10px] uppercase tracking-wider text-slate-400 block mb-1">
+                      Additional Fees (Optional)
+                    </Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      
+                      {/* Shipping */}
+                      <div className="space-y-2 p-2 bg-slate-950/60 border border-slate-800/60 rounded-md">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] uppercase tracking-wider text-slate-400 font-medium">Shipping</span>
+                          <Switch
+                            checked={formData.shippingChargeEnabled}
+                            onCheckedChange={(val) => setFormData(prev => ({ ...prev, shippingChargeEnabled: val }))}
+                            className="scale-75 origin-right"
+                          />
+                        </div>
+                        <Input
+                          type="number"
+                          placeholder="₹0"
+                          disabled={!formData.shippingChargeEnabled}
+                          value={formData.shippingCharge}
+                          onChange={(e) => setFormData(prev => ({ ...prev, shippingCharge: e.target.value === "" ? "" : Number(e.target.value) }))}
+                          className="bg-slate-950 border-slate-800 text-slate-100 text-xs placeholder:text-slate-800 h-7"
+                          min="0"
+                        />
+                      </div>
+
+                      {/* Processing */}
+                      <div className="space-y-2 p-2 bg-slate-950/60 border border-slate-800/60 rounded-md">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] uppercase tracking-wider text-slate-400 font-medium">Processing</span>
+                          <Switch
+                            checked={formData.processingChargeEnabled}
+                            onCheckedChange={(val) => setFormData(prev => ({ ...prev, processingChargeEnabled: val }))}
+                            className="scale-75 origin-right"
+                          />
+                        </div>
+                        <Input
+                          type="number"
+                          placeholder="₹0"
+                          disabled={!formData.processingChargeEnabled}
+                          value={formData.processingCharge}
+                          onChange={(e) => setFormData(prev => ({ ...prev, processingCharge: e.target.value === "" ? "" : Number(e.target.value) }))}
+                          className="bg-slate-950 border-slate-800 text-slate-100 text-xs placeholder:text-slate-800 h-7"
+                          min="0"
+                        />
+                      </div>
+
+                      {/* Packaging */}
+                      <div className="space-y-2 p-2 bg-slate-950/60 border border-slate-800/60 rounded-md">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] uppercase tracking-wider text-slate-400 font-medium">Packaging</span>
+                          <Switch
+                            checked={formData.packagingChargeEnabled}
+                            onCheckedChange={(val) => setFormData(prev => ({ ...prev, packagingChargeEnabled: val }))}
+                            className="scale-75 origin-right"
+                          />
+                        </div>
+                        <Input
+                          type="number"
+                          placeholder="₹0"
+                          disabled={!formData.packagingChargeEnabled}
+                          value={formData.packagingCharge}
+                          onChange={(e) => setFormData(prev => ({ ...prev, packagingCharge: e.target.value === "" ? "" : Number(e.target.value) }))}
+                          className="bg-slate-950 border-slate-800 text-slate-100 text-xs placeholder:text-slate-800 h-7"
+                          min="0"
+                        />
+                      </div>
+
                     </div>
                   </div>
 
