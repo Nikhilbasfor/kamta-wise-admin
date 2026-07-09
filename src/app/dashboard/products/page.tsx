@@ -111,7 +111,7 @@ interface ProductFormData {
   images: string[];
 }
 
-const defaultCategories = ["Tshirts", "Full Shirts", "Trousers", "Half Pants", "Sneakers"];
+const defaultCategories = ["Full Shirts", "Trousers", "Half Pants", "Sneakers"];
 const presetSizesApparel = ["XS", "S", "M", "L", "XL", "XXL"];
 const presetSizesShoes = ["6", "7", "8", "9", "10", "11"];
 const presetColors = ["Ivory", "Black", "Beige", "Olive", "Brown", "Grey", "Navy"];
