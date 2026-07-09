@@ -80,6 +80,8 @@ interface Product {
   isNewArrival: boolean;
   isBestseller: boolean;
   isActive: boolean;
+  isCodAllowed?: boolean;
+  isReturnable?: boolean;
   images: string[];
   createdAt: Timestamp;
 }
@@ -108,6 +110,8 @@ interface ProductFormData {
   isNewArrival: boolean;
   isBestseller: boolean;
   isActive: boolean;
+  isCodAllowed: boolean;
+  isReturnable: boolean;
   images: string[];
 }
 
@@ -140,6 +144,8 @@ const getInitialFormData = (): ProductFormData => ({
   isNewArrival: false,
   isBestseller: false,
   isActive: true,
+  isCodAllowed: true,
+  isReturnable: true,
   images: [""],
 });
 
@@ -269,6 +275,8 @@ export default function ProductsPage() {
       isNewArrival: !!product.isNewArrival,
       isBestseller: !!product.isBestseller,
       isActive: product.isActive !== false,
+      isCodAllowed: product.isCodAllowed !== false,
+      isReturnable: product.isReturnable !== false,
       images: product.images && product.images.length > 0 ? [...product.images] : [""],
     });
     setIsSlugEdited(true);
@@ -329,6 +337,8 @@ export default function ProductsPage() {
         isNewArrival: formData.isNewArrival,
         isBestseller: formData.isBestseller,
         isActive: formData.isActive,
+        isCodAllowed: formData.isCodAllowed,
+        isReturnable: formData.isReturnable,
         images: cleanImages,
         shippingChargeEnabled: formData.shippingChargeEnabled,
         processingChargeEnabled: formData.processingChargeEnabled,
@@ -1113,7 +1123,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Switches Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-slate-950/30 border border-slate-800 rounded-xl">
+              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4 p-4 bg-slate-950/30 border border-slate-800 rounded-xl">
                 
                 <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800/80 rounded-lg">
                   <div className="space-y-0.5">
@@ -1148,6 +1158,30 @@ export default function ProductsPage() {
                     id="switch-active"
                     checked={formData.isActive}
                     onCheckedChange={(val) => setFormData(prev => ({ ...prev, isActive: val }))}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800/80 rounded-lg">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="switch-cod" className="text-xs font-medium text-slate-300">Allow COD</Label>
+                    <p className="text-[9px] text-slate-500 uppercase font-sans tracking-wide">Cash on Delivery option</p>
+                  </div>
+                  <Switch
+                    id="switch-cod"
+                    checked={formData.isCodAllowed}
+                    onCheckedChange={(val) => setFormData(prev => ({ ...prev, isCodAllowed: val }))}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800/80 rounded-lg">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="switch-returnable" className="text-xs font-medium text-slate-300">Allow Returns</Label>
+                    <p className="text-[9px] text-slate-500 uppercase font-sans tracking-wide">Can return or exchange</p>
+                  </div>
+                  <Switch
+                    id="switch-returnable"
+                    checked={formData.isReturnable}
+                    onCheckedChange={(val) => setFormData(prev => ({ ...prev, isReturnable: val }))}
                   />
                 </div>
 
