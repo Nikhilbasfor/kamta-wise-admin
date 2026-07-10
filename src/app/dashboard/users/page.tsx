@@ -10,6 +10,15 @@ import {
   TableHead, 
   TableCell 
 } from "@/components/ui/table";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { db } from "@/lib/firebase";
@@ -31,6 +40,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -147,7 +157,11 @@ export default function UsersPage() {
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((u) => (
-                  <TableRow key={u.id} className="hover:bg-slate-800/40 border-slate-850 border-b border-slate-800/50">
+                  <TableRow 
+                    key={u.id} 
+                    onClick={() => setSelectedUser(u)}
+                    className="hover:bg-slate-800/40 border-slate-850 border-b border-slate-800/50 cursor-pointer transition-colors"
+                  >
                     
                     {/* Customer Name */}
                     <TableCell className="py-4 text-xs font-semibold text-slate-200">
@@ -187,6 +201,72 @@ export default function UsersPage() {
             </Table>
           </div>
         )}
+
+        {/* User Profile Details Modal */}
+        <Dialog open={!!selectedUser} onOpenChange={(open) => { if (!open) setSelectedUser(null); }}>
+          <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md rounded-xl">
+            <DialogHeader className="border-b border-slate-800 pb-3">
+              <DialogTitle className="text-base font-light uppercase tracking-widest text-slate-200 flex items-center gap-2">
+                <UsersIcon size={16} className="text-slate-400" />
+                Customer Account Profile
+              </DialogTitle>
+              <DialogDescription className="text-[10px] text-slate-500 uppercase tracking-wider">
+                Full profile registry details for client account
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedUser && (
+              <div className="space-y-4 py-4 text-xs">
+                {/* Name */}
+                <div className="grid grid-cols-3 gap-2 border-b border-slate-800/40 pb-2">
+                  <span className="text-slate-500 uppercase tracking-wider">Full Name</span>
+                  <span className="col-span-2 font-medium text-slate-250">{selectedUser.name}</span>
+                </div>
+
+                {/* Email */}
+                <div className="grid grid-cols-3 gap-2 border-b border-slate-800/40 pb-2">
+                  <span className="text-slate-500 uppercase tracking-wider">Email Address</span>
+                  <span className="col-span-2 font-mono text-slate-300 break-all">{selectedUser.email}</span>
+                </div>
+
+                {/* Phone */}
+                <div className="grid grid-cols-3 gap-2 border-b border-slate-800/40 pb-2">
+                  <span className="text-slate-500 uppercase tracking-wider">Phone Number</span>
+                  <span className="col-span-2 font-mono text-slate-300">{selectedUser.phone}</span>
+                </div>
+
+                {/* Date Joined */}
+                <div className="grid grid-cols-3 gap-2 border-b border-slate-800/40 pb-2">
+                  <span className="text-slate-500 uppercase tracking-wider">Joining Date</span>
+                  <span className="col-span-2 text-slate-350">{selectedUser.joined}</span>
+                </div>
+
+                {/* Orders count */}
+                <div className="grid grid-cols-3 gap-2 border-b border-slate-800/40 pb-2">
+                  <span className="text-slate-500 uppercase tracking-wider">Total Orders</span>
+                  <span className="col-span-2 font-semibold text-slate-250">{selectedUser.totalOrders}</span>
+                </div>
+
+                {/* Address */}
+                <div className="space-y-1.5">
+                  <span className="text-slate-500 uppercase tracking-wider block">Default Delivery Address</span>
+                  <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800 text-slate-300 leading-relaxed font-sans font-light">
+                    {selectedUser.address}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="border-t border-slate-800 pt-3 flex justify-end">
+              <Button
+                onClick={() => setSelectedUser(null)}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-950 text-xs font-semibold uppercase tracking-widest px-5 h-8"
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
       </div>
     </AdminGuard>

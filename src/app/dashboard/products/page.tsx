@@ -83,6 +83,8 @@ interface Product {
   isCodAllowed?: boolean;
   isReturnable?: boolean;
   images: string[];
+  videoUrl?: string | null;
+  colorImages?: { [color: string]: string[] } | null;
   createdAt: Timestamp;
 }
 
@@ -113,6 +115,8 @@ interface ProductFormData {
   isCodAllowed: boolean;
   isReturnable: boolean;
   images: string[];
+  videoUrl: string;
+  colorImages: { [color: string]: string[] };
 }
 
 const defaultCategories = ["Full Shirts", "Trousers", "Half Pants", "Sneakers"];
@@ -147,6 +151,8 @@ const getInitialFormData = (): ProductFormData => ({
   isCodAllowed: true,
   isReturnable: true,
   images: [""],
+  videoUrl: "",
+  colorImages: {},
 });
 
 export default function ProductsPage() {
@@ -250,6 +256,17 @@ export default function ProductsPage() {
   };
 
   const openEditDialog = (product: Product) => {
+    const colorImgs: { [color: string]: string[] } = {};
+    if (product.colors && Array.isArray(product.colors)) {
+      product.colors.forEach(col => {
+        if (product.colorImages && product.colorImages[col]) {
+          colorImgs[col] = [...product.colorImages[col]];
+        } else {
+          colorImgs[col] = [""];
+        }
+      });
+    }
+
     setEditingProduct(product);
     setFormData({
       name: product.name || "",
@@ -278,6 +295,8 @@ export default function ProductsPage() {
       isCodAllowed: product.isCodAllowed !== false,
       isReturnable: product.isReturnable !== false,
       images: product.images && product.images.length > 0 ? [...product.images] : [""],
+      videoUrl: product.videoUrl || "",
+      colorImages: colorImgs,
     });
     setIsSlugEdited(true);
     setIsDialogOpen(true);
@@ -300,13 +319,31 @@ export default function ProductsPage() {
   const addColor = (color: string) => {
     const cleaned = color.trim();
     if (cleaned && !formData.colors.includes(cleaned)) {
-      setFormData(prev => ({ ...prev, colors: [...prev.colors, cleaned] }));
+      setFormData(prev => {
+        const nextColorImages = { ...prev.colorImages };
+        if (!nextColorImages[cleaned]) {
+          nextColorImages[cleaned] = [""];
+        }
+        return {
+          ...prev,
+          colors: [...prev.colors, cleaned],
+          colorImages: nextColorImages
+        };
+      });
     }
     setColorInput("");
   };
 
   const removeColor = (color: string) => {
-    setFormData(prev => ({ ...prev, colors: prev.colors.filter(c => c !== color) }));
+    setFormData(prev => {
+      const nextColorImages = { ...prev.colorImages };
+      delete nextColorImages[color];
+      return {
+        ...prev,
+        colors: prev.colors.filter(c => c !== color),
+        colorImages: nextColorImages
+      };
+    });
   };
 
   // Save changes
@@ -321,6 +358,20 @@ export default function ProductsPage() {
     try {
       const cleanImages = formData.images.map(url => url.trim()).filter(url => url !== "");
       
+      const cleanColorImages: { [color: string]: string[] } = {};
+      if (formData.colorImages) {
+        Object.keys(formData.colorImages).forEach(col => {
+          if (formData.colors.includes(col)) {
+            const urls = formData.colorImages[col]
+              .map(u => u.trim())
+              .filter(u => u !== "");
+            if (urls.length > 0) {
+              cleanColorImages[col] = urls;
+            }
+          }
+        });
+      }
+
       const payload: any = {
         name: formData.name.trim(),
         slug: formData.slug.trim(),
@@ -340,6 +391,8 @@ export default function ProductsPage() {
         isCodAllowed: formData.isCodAllowed,
         isReturnable: formData.isReturnable,
         images: cleanImages,
+        videoUrl: formData.videoUrl.trim() || null,
+        colorImages: Object.keys(cleanColorImages).length > 0 ? cleanColorImages : null,
         shippingChargeEnabled: formData.shippingChargeEnabled,
         processingChargeEnabled: formData.processingChargeEnabled,
         packagingChargeEnabled: formData.packagingChargeEnabled,
@@ -1121,6 +1174,142 @@ export default function ProductsPage() {
                   </div>
                 )}
               </div>
+
+              {/* Product Video URL (Optional) */}
+              <div className="space-y-2 p-4 bg-slate-950/30 border border-slate-800 rounded-xl">
+                <Label htmlFor="prod-video" className="text-[10px] uppercase tracking-wider text-slate-400 block mb-1">
+                  Product Video URL (Optional)
+                </Label>
+                <Input
+                  id="prod-video"
+                  value={formData.videoUrl}
+                  onChange={e => setFormData({ ...formData, videoUrl: e.target.value })}
+                  placeholder="e.g. https://www.w3schools.com/html/mov_bbb.mp4 or YouTube embed/file link"
+                  className="bg-slate-950 border-slate-800 text-xs text-slate-200 placeholder:text-slate-850"
+                />
+                <p className="text-[9px] text-slate-500 uppercase tracking-wide">
+                  Paste direct MP4 link, YouTube URL, or cloud hosted video path for storefront media gallery.
+                </p>
+              </div>
+
+              {/* Color Specific Images Section */}
+              {formData.colors.length > 0 && (
+                <div className="space-y-4 p-4 bg-slate-950/30 border border-slate-800 rounded-xl">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block">
+                      Color Specific Images (Optional)
+                    </Label>
+                    <p className="text-[9px] text-slate-500 uppercase font-sans tracking-wide">
+                      Add custom image links for each color to display them first on the storefront buy now page
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-3 mt-2">
+                    {formData.colors.map(color => {
+                      const colorSpecificUrls = formData.colorImages[color] || [""];
+                      return (
+                        <div key={color} className="p-3 bg-slate-950/60 border border-slate-800/80 rounded-lg space-y-2">
+                          <div className="flex items-center justify-between border-b border-slate-900 pb-1.5">
+                            <span className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-slate-600 border border-slate-800" />
+                              Color Variant: {color}
+                            </span>
+                            <span className="text-[9px] text-slate-500 uppercase">
+                              {colorSpecificUrls.filter(u => u.trim() !== "").length} images added
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            {colorSpecificUrls.map((url, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className="text-[9px] font-sans text-slate-650 w-4 font-mono">#{idx+1}</span>
+                                <Input
+                                  value={url}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    const updatedUrls = [...colorSpecificUrls];
+                                    updatedUrls[idx] = val;
+                                    
+                                    // Auto resolve ImgBB links
+                                    if (val.includes("ibb.co") && !val.includes("i.ibb.co")) {
+                                      fetch(`/api/resolve-image?url=${encodeURIComponent(val.trim())}`)
+                                        .then(r => r.json())
+                                        .then(data => {
+                                          if (data.resolvedUrl) {
+                                            setFormData(prev => {
+                                              const prevUrls = [...(prev.colorImages[color] || [""])];
+                                              if (prevUrls.length > idx) {
+                                                prevUrls[idx] = data.resolvedUrl;
+                                              }
+                                              return {
+                                                ...prev,
+                                                colorImages: {
+                                                  ...prev.colorImages,
+                                                  [color]: prevUrls
+                                                }
+                                              };
+                                            });
+                                          }
+                                        })
+                                        .catch(err => console.error("Error resolving url", err));
+                                    }
+                                    
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      colorImages: {
+                                        ...prev.colorImages,
+                                        [color]: updatedUrls
+                                      }
+                                    }));
+                                  }}
+                                  placeholder={`Image link for ${color}...`}
+                                  className="bg-slate-950 border-slate-800 text-[11px] h-8 flex-1 text-slate-300"
+                                />
+                                {colorSpecificUrls.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      const updated = colorSpecificUrls.filter((_, i) => i !== idx);
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        colorImages: {
+                                          ...prev.colorImages,
+                                          [color]: updated
+                                        }
+                                      }));
+                                    }}
+                                    className="text-red-400 hover:text-red-300 hover:bg-red-950/20 p-2 h-8"
+                                  >
+                                    <Trash2 size={13} />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                colorImages: {
+                                  ...prev.colorImages,
+                                  [color]: [...colorSpecificUrls, ""]
+                                }
+                              }));
+                            }}
+                            variant="ghost"
+                            className="text-[9px] uppercase tracking-wider text-slate-400 hover:text-slate-200 h-7 px-3 border border-slate-800/80 hover:bg-slate-900/50"
+                          >
+                            + Add {color} Image Row
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Switches Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4 p-4 bg-slate-950/30 border border-slate-800 rounded-xl">

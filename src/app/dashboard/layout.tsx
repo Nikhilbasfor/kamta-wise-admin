@@ -43,6 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [pendingInfCount, setPendingInfCount] = React.useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
 
   // Close mobile menu on path change
   React.useEffect(() => {
@@ -95,10 +96,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex h-screen overflow-hidden bg-slate-950 text-slate-100 font-sans">
         
         {/* Desktop Sidebar - hidden on mobile (< md) */}
-        <aside className="hidden md:flex w-64 flex-shrink-0 bg-slate-900 border-r border-slate-800 flex-col h-full font-sans">
+        <aside className={`hidden md:flex ${sidebarCollapsed ? 'w-0 border-r-0' : 'w-64 border-r border-slate-800'} transition-all duration-300 ease-in-out flex-shrink-0 bg-slate-900 flex-col h-full font-sans overflow-hidden`}>
           {/* Logo Section */}
-          <div className="h-16 flex items-center px-6 border-b border-slate-800">
-            <Link href="/dashboard" className="text-sm font-bold tracking-[0.2em] text-slate-100 uppercase">
+          <div className="h-16 flex items-center px-6 border-b border-slate-800 flex-shrink-0">
+            <Link href="/dashboard" className="text-sm font-bold tracking-[0.2em] text-slate-100 uppercase whitespace-nowrap">
               KAMTA WISE ADMIN
             </Link>
           </div>
@@ -242,12 +243,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex-1 flex flex-col h-full overflow-hidden font-sans min-w-0">
           {/* Header Block */}
           <header className="h-16 flex items-center justify-between px-4 md:px-8 border-b border-slate-800/80 bg-slate-950 flex-shrink-0">
-            {/* Three Bar Hamburger Menu Button (Mobile only) */}
+            {/* Three Bar Hamburger Menu Button (Mobile/Desktop) */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="md:hidden p-2 text-slate-300 hover:text-white rounded-lg bg-slate-900 border border-slate-800 focus:outline-none"
+                className="md:hidden p-2 text-slate-300 hover:text-white rounded-lg bg-slate-900 border border-slate-800 focus:outline-none cursor-pointer"
                 aria-label="Open navigation menu"
+              >
+                <Menu size={20} />
+              </button>
+
+              {/* Desktop toggle sidebar button */}
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="hidden md:flex p-2 text-slate-300 hover:text-white rounded-lg bg-slate-900 border border-slate-800 focus:outline-none cursor-pointer"
+                aria-label={sidebarCollapsed ? "Open sidebar" : "Close sidebar"}
               >
                 <Menu size={20} />
               </button>

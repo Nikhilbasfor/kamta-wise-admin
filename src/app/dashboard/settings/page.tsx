@@ -254,10 +254,6 @@ export default function SettingsPage() {
   // Tab 2 Slide Add / Remove / Edit
   const handleAddSlide = () => {
     if (!settings) return;
-    if (settings.heroBanner.slides.length >= 5) {
-      toast.error("Maximum limit of 5 slides reached");
-      return;
-    }
     const newSlide: Slide = {
       id: `slide_${Date.now()}`,
       src: "",
@@ -573,12 +569,11 @@ export default function SettingsPage() {
                     Homepage Hero Banner slides
                   </CardTitle>
                   <CardDescription className="text-xs text-slate-500">
-                    Configure image slides showing in homepage main gallery slider (Max 5 slides)
+                    Configure image slides showing in homepage main gallery slider
                   </CardDescription>
                 </div>
                 <Button
                   onClick={handleAddSlide}
-                  disabled={settings.heroBanner.slides.length >= 5}
                   className="bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 text-xs uppercase tracking-wider py-2"
                 >
                   <Plus size={14} className="mr-1" />
