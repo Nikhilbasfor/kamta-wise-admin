@@ -42,7 +42,9 @@ import {
   onSnapshot, 
   query, 
   orderBy, 
-  Timestamp 
+  Timestamp,
+  where,
+  getDocs
 } from "firebase/firestore";
 import { 
   Plus, 
@@ -427,6 +429,27 @@ export default function ProductsPage() {
       } else {
         payload.discountedPrice = null;
       }
+
+      // Enforce unique slug
+      let uniqueSlug = payload.slug;
+      let isUnique = false;
+      let counter = 0;
+      
+      while (!isUnique) {
+        const qSlug = query(
+          collection(db, "products"),
+          where("slug", "==", uniqueSlug)
+        );
+        const slugSnap = await getDocs(qSlug);
+        const conflict = slugSnap.docs.some(docSnap => docSnap.id !== (editingProduct?.id || ""));
+        if (conflict) {
+          counter++;
+          uniqueSlug = `${payload.slug}-${counter}`;
+        } else {
+          isUnique = true;
+        }
+      }
+      payload.slug = uniqueSlug;
 
       if (editingProduct) {
         // Update Product
