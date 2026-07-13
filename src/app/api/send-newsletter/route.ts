@@ -4,6 +4,10 @@ import { NextResponse } from "next/server";
 const resend = new Resend(process.env.RESEND_API_KEY || "re_mock_key");
 
 export async function POST(request: Request) {
+  if (request.headers.get("X-Admin-Secret") !== process.env.ADMIN_API_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { subject, bodyText, subscribers } = await request.json();
 
@@ -55,16 +59,28 @@ export async function POST(request: Request) {
       </html>
     `;
 
-    // Send emails via Resend (using batch / bcc or individual sends)
-    // Resend free tier sends from onboarding@resend.dev
-    const data = await resend.emails.send({
-      from: "Kamta Wise <onboarding@resend.dev>",
-      to: emailList,
-      subject: subject,
-      html: emailHtml,
-    });
+    // Send emails individually to avoid exposing the list to other subscribers
+    const results = await Promise.allSettled(
+      emailList.map((email: string) => 
+        resend.emails.send({
+          from: `Kamta Wise <${process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"}>`,
+          to: email,
+          subject: subject,
+          html: emailHtml,
+        })
+      )
+    );
 
-    return NextResponse.json({ success: true, count: emailList.length, data });
+    const fulfilledCount = results.filter(r => r.status === "fulfilled").length;
+    const rejectedCount = results.filter(r => r.status === "rejected").length;
+
+    return NextResponse.json({ 
+      success: true, 
+      count: emailList.length, 
+      fulfilledCount, 
+      rejectedCount,
+      results 
+    });
   } catch (error: any) {
     console.error("Error sending newsletter emails:", error);
     return NextResponse.json({ error: error.message || "Failed to send newsletter emails" }, { status: 500 });

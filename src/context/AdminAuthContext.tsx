@@ -1,14 +1,14 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged } from "firebase/auth";
+import { User, signInWithCustomToken, signOut as firebaseSignOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { ADMIN_EMAIL } from "@/lib/auth";
 
 interface AdminAuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (token: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -36,10 +36,10 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (token: string) => {
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithCustomToken(auth, token);
       const loggedInUser = userCredential.user;
       
       if (loggedInUser.email !== ADMIN_EMAIL) {

@@ -1,9 +1,15 @@
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
+import { adminAuth } from "@/lib/firebaseAdmin";
 
 const resend = new Resend(process.env.RESEND_API_KEY || "re_mock_key");
 
 export async function POST(request: Request) {
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try { await adminAuth.verifyIdToken(authHeader.slice(7)); }
+  catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+
   try {
     const body = await request.json();
     const { orderNumber, customerEmail, customerName, items, total, address, phone } = body;
@@ -109,7 +115,7 @@ export async function POST(request: Request) {
     `;
 
     const data = await resend.emails.send({
-      from: "Kamta Wise <onboarding@resend.dev>",
+      from: `Kamta Wise <${process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"}>`,
       to: customerEmail,
       subject: `Order Confirmed — ${orderNumber} | Kamta Wise`,
       html: emailHtml,

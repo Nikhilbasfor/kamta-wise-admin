@@ -8,6 +8,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing URL parameter" }, { status: 400 });
   }
 
+  const allowed = ["ibb.co", "i.ibb.co"];
+  try {
+    const { hostname } = new URL(url);
+    if (!allowed.some(h => hostname === h || hostname.endsWith("." + h))) {
+      return NextResponse.json({ error: "URL not allowed" }, { status: 400 });
+    }
+  } catch {
+    return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+  }
+
   try {
     const cleanUrl = url.trim();
     

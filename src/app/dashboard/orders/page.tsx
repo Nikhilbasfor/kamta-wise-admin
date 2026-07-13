@@ -36,7 +36,12 @@ import {
   doc, 
   getDocs, 
   getDoc,
-  updateDoc 
+  updateDoc,
+  query,
+  orderBy,
+  limit,
+  startAfter,
+  QueryDocumentSnapshot
 } from "firebase/firestore";
 import { Search, Loader2, RefreshCw } from "lucide-react";
 
@@ -53,6 +58,8 @@ interface Order {
   userEmail: string;
 }
 
+const PAGE_SIZE = 20;
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +69,12 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [cursorStack, setCursorStack] = useState<(QueryDocumentSnapshot | null)[]>([null]);
+
   // Edit Status Modal States
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [newStatus, setNewStatus] = useState<"Processing" | "Shipped" | "Delivered" | "Cancelled">("Processing");
@@ -69,39 +82,46 @@ export default function OrdersPage() {
   const [trackingNumber, setTrackingNumber] = useState("");
   const [updating, setUpdating] = useState(false);
 
-  const fetchAllOrders = async (showRefreshToast = false) => {
+  const fetchOrders = async (cursor: QueryDocumentSnapshot | null = null, showRefreshToast = false) => {
     if (showRefreshToast) setRefreshing(true);
+    else setLoading(true);
     try {
-      // 1. Fetch all users
-      const usersSnap = await getDocs(collection(db, "users"));
-      const ordersPromises = usersSnap.docs.map(async (userDoc) => {
-        const userData = userDoc.data();
-        const userId = userDoc.id;
-        const userName = userData.name || "Guest Customer";
-        const userEmail = userData.email || "";
-        
-        // 2. Fetch orders subcollection for each user
-        const ordersSnap = await getDocs(collection(db, "users", userId, "orders"));
-        return ordersSnap.docs.map((orderDoc) => ({
-          id: orderDoc.id,
-          userId,
-          userName,
-          userEmail,
-          ...orderDoc.data(),
-        })) as Order[];
-      });
+      // Query top-level /orders collection, ordered by createdAt descending
+      let q = query(
+        collection(db, "orders"),
+        orderBy("createdAt", "desc"),
+        limit(PAGE_SIZE + 1)
+      );
+      if (cursor) {
+        q = query(
+          collection(db, "orders"),
+          orderBy("createdAt", "desc"),
+          startAfter(cursor),
+          limit(PAGE_SIZE + 1)
+        );
+      }
 
-      const allOrdersArrays = await Promise.all(ordersPromises);
-      const flatOrders = allOrdersArrays.flat();
+      const snap = await getDocs(q);
+      const docs = snap.docs;
 
-      // Sort by date descending
-      const parseDate = (dateStr: string) => {
-        const parsed = Date.parse(dateStr);
-        return isNaN(parsed) ? 0 : parsed;
-      };
+      // Check if there are more pages
+      if (docs.length > PAGE_SIZE) {
+        setHasMore(true);
+        docs.pop(); // Remove the extra doc used for lookahead
+      } else {
+        setHasMore(false);
+      }
 
-      flatOrders.sort((a, b) => parseDate(b.date) - parseDate(a.date));
-      setOrders(flatOrders);
+      const fetched = docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as Order[];
+
+      if (docs.length > 0) {
+        setLastDoc(docs[docs.length - 1]);
+      }
+
+      setOrders(fetched);
       if (showRefreshToast) toast.success("Orders refreshed");
     } catch (err) {
       console.error("Error loading orders:", err);
@@ -113,8 +133,32 @@ export default function OrdersPage() {
   };
 
   useEffect(() => {
-    fetchAllOrders();
+    fetchOrders(null);
   }, []);
+
+  const goToNextPage = () => {
+    if (!hasMore || !lastDoc) return;
+    setCursorStack((prev) => [...prev, lastDoc]);
+    setCurrentPage((p) => p + 1);
+    fetchOrders(lastDoc);
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage <= 1) return;
+    const newStack = [...cursorStack];
+    newStack.pop();
+    setCursorStack(newStack);
+    setCurrentPage((p) => p - 1);
+    fetchOrders(newStack[newStack.length - 1]);
+  };
+
+  const handleRefresh = () => {
+    setCurrentPage(1);
+    setCursorStack([null]);
+    setLastDoc(null);
+    setHasMore(true);
+    fetchOrders(null, true);
+  };
 
   const openStatusModal = (order: Order & { courierPartner?: string; trackingNumber?: string }) => {
     setSelectedOrder(order);
@@ -133,29 +177,38 @@ export default function OrdersPage() {
         trackingNumber: trackingNumber || "",
       };
 
-      // 1. Update subcollection document
-      const orderDocRef = doc(db, "users", selectedOrder.userId, "orders", selectedOrder.id);
-      await updateDoc(orderDocRef, updateData);
+      // 1. Update top-level /orders document
+      const topLevelRef = doc(db, "orders", selectedOrder.id);
+      await updateDoc(topLevelRef, updateData);
 
-      // 2. Sync inside parent users profile orders list array
-      const userDocRef = doc(db, "users", selectedOrder.userId);
-      const userSnap = await getDoc(userDocRef);
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-        if (Array.isArray(userData.orders)) {
-          const updatedOrders = userData.orders.map((o: any) => {
-            if (o.orderNumber === selectedOrder.orderNumber) {
-              return { ...o, ...updateData };
-            }
-            return o;
-          });
-          await updateDoc(userDocRef, { orders: updatedOrders });
+      // 2. Update subcollection document
+      if (selectedOrder.userId) {
+        const orderDocRef = doc(db, "users", selectedOrder.userId, "orders", selectedOrder.id);
+        await updateDoc(orderDocRef, updateData).catch((e) => console.warn("Subcollection sync failed:", e));
+      }
+
+      // 3. Sync inside parent users profile orders list array
+      if (selectedOrder.userId) {
+        const userDocRef = doc(db, "users", selectedOrder.userId);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          if (Array.isArray(userData.orders)) {
+            const updatedOrders = userData.orders.map((o: any) => {
+              if (o.orderNumber === selectedOrder.orderNumber) {
+                return { ...o, ...updateData };
+              }
+              return o;
+            });
+            await updateDoc(userDocRef, { orders: updatedOrders });
+          }
         }
       }
 
       toast.success(`Order ${selectedOrder.orderNumber} status updated to ${newStatus}`);
       setSelectedOrder(null);
-      fetchAllOrders();
+      // Re-fetch current page
+      fetchOrders(cursorStack[cursorStack.length - 1]);
     } catch (err) {
       console.error("Error updating order status:", err);
       toast.error("Failed to update status");
@@ -231,7 +284,7 @@ export default function OrdersPage() {
             </p>
           </div>
           <Button
-            onClick={() => fetchAllOrders(true)}
+            onClick={handleRefresh}
             disabled={refreshing}
             variant="outline"
             className="border-slate-800 hover:bg-slate-900 text-slate-300 text-xs uppercase tracking-wider"
@@ -354,6 +407,33 @@ export default function OrdersPage() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && orders.length > 0 && (
+          <div className="flex items-center justify-between bg-slate-900/60 p-4 border border-slate-800/80 rounded-xl">
+            <span className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">
+              Page {currentPage} · Showing {orders.length} order{orders.length !== 1 ? 's' : ''}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={goToPrevPage}
+                disabled={currentPage <= 1}
+                variant="outline"
+                className="border-slate-800 hover:bg-slate-900 text-slate-300 text-xs uppercase tracking-wider disabled:opacity-30"
+              >
+                ← Previous
+              </Button>
+              <Button
+                onClick={goToNextPage}
+                disabled={!hasMore}
+                variant="outline"
+                className="border-slate-800 hover:bg-slate-900 text-slate-300 text-xs uppercase tracking-wider disabled:opacity-30"
+              >
+                Next →
+              </Button>
+            </div>
           </div>
         )}
 

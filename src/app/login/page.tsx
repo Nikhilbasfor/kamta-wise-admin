@@ -26,20 +26,22 @@ export default function LoginPage() {
     setError(null);
     setSigningIn(true);
 
-    const targetPin = process.env.NEXT_PUBLIC_ADMIN_PIN;
-    if (pin !== targetPin) {
-      setError("Incorrect PIN");
-      setSigningIn(false);
-      return;
-    }
-
     try {
-      const email = process.env.NEXT_PUBLIC_ADMIN_FIREBASE_EMAIL || "";
-      const password = process.env.NEXT_PUBLIC_ADMIN_FIREBASE_PASSWORD || "";
-      await signIn(email, password);
+      const response = await fetch("/api/admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Authentication failed");
+      }
+
+      await signIn(data.token);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err?.message || "Firebase login failed");
+      setError(err?.message || "Login failed");
       setSigningIn(false);
     }
   };

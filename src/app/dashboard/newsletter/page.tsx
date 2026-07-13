@@ -95,7 +95,10 @@ export default function NewsletterPage() {
     try {
       const res = await fetch("/api/send-newsletter", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Admin-Secret": process.env.NEXT_PUBLIC_ADMIN_API_SECRET || ""
+        },
         body: JSON.stringify({
           subject: subject.trim(),
           bodyText: body.trim(),
