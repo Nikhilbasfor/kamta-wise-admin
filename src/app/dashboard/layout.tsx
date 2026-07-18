@@ -19,7 +19,8 @@ import {
   LogOut,
   Menu,
   X,
-  Sparkles
+  Sparkles,
+  LineChart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -37,6 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Contact Messages", href: "/dashboard/messages", icon: Mail },
     { name: "Newsletter", href: "/dashboard/newsletter", icon: FileText },
     { name: "Influencers", href: "/dashboard/influencers", icon: Sparkles },
+    { name: "Analytics", href: "/dashboard/analytics", icon: LineChart },
     { name: "Site Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
