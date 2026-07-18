@@ -89,6 +89,9 @@ export default function OrdersPage() {
   const [hasMore, setHasMore] = useState(true);
   const [cursorStack, setCursorStack] = useState<(QueryDocumentSnapshot | null)[]>([null]);
 
+  // View Items Modal State
+  const [viewItemsOrder, setViewItemsOrder] = useState<Order | null>(null);
+
   // Edit Status Modal States
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [newStatus, setNewStatus] = useState<"Processing" | "Shipped" | "Delivered" | "Cancelled">("Processing");
@@ -358,7 +361,7 @@ export default function OrdersPage() {
                 <TableRow className="hover:bg-transparent border-slate-800">
                   <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Order Number</TableHead>
                   <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Customer</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Items</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider text-slate-400 hidden md:table-cell">Items</TableHead>
                   <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Date</TableHead>
                   <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Total</TableHead>
                   <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Shipping Address</TableHead>
@@ -380,19 +383,38 @@ export default function OrdersPage() {
                     <TableCell className="py-4">
                       <div className="text-xs font-medium text-slate-200">{order.userName}</div>
                       <div className="text-[10px] text-slate-500 font-sans tracking-wide truncate max-w-[140px]">{order.userEmail}</div>
+                      {/* Mobile-only view items trigger */}
+                      <div className="md:hidden mt-2">
+                        <Button
+                          onClick={() => setViewItemsOrder(order)}
+                          variant="outline"
+                          className="h-6 border-slate-800 bg-slate-950/60 text-[9px] uppercase tracking-wider px-2 py-0.5 text-slate-300 hover:bg-slate-900 hover:text-slate-100 rounded-md"
+                        >
+                          Items ({order.items?.length || 0})
+                        </Button>
+                      </div>
                     </TableCell>
 
                     {/* Items */}
-                    <TableCell className="py-4">
+                    <TableCell 
+                      className="py-4 hidden md:table-cell cursor-pointer hover:bg-slate-850/30 transition-colors"
+                      onClick={() => setViewItemsOrder(order)}
+                      title="Click to view full details"
+                    >
                       <div className="space-y-1 max-w-[200px]">
-                        {order.items && order.items.map((item, idx) => (
-                          <div key={idx} className="text-[11px] leading-tight text-slate-355">
+                        {order.items && order.items.slice(0, 2).map((item, idx) => (
+                          <div key={idx} className="text-[11px] leading-tight text-slate-300">
                             <span className="font-semibold text-slate-100">{item.quantity}x</span> {item.product?.name || "Product"}
                             <span className="text-[9px] text-slate-500 block">
                               Size: {item.selectedSize} · Color: {item.selectedColor}
                             </span>
                           </div>
                         ))}
+                        {order.items && order.items.length > 2 && (
+                          <div className="text-[9px] text-slate-400 font-medium mt-1 hover:text-slate-200">
+                            + {order.items.length - 2} more items...
+                          </div>
+                        )}
                         {(!order.items || order.items.length === 0) && (
                           <span className="text-slate-600 italic text-[11px]">No items info</span>
                         )}
@@ -596,6 +618,111 @@ export default function OrdersPage() {
               </div>
             )}
 
+          </DialogContent>
+        </Dialog>
+
+        {/* View Items Details Modal Dialog */}
+        <Dialog open={!!viewItemsOrder} onOpenChange={(open) => { if (!open) setViewItemsOrder(null); }}>
+          <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-light uppercase tracking-widest text-slate-200">
+                Order Items & Customer Details
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Full purchase invoice breakdown and customer identity details.
+              </DialogDescription>
+            </DialogHeader>
+
+            {viewItemsOrder && (
+              <div className="space-y-5 py-2 text-xs font-sans">
+                {/* Customer / Order Metadata */}
+                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-950/65 border border-slate-800/80 rounded-xl">
+                  <div className="space-y-1">
+                    <span className="text-slate-500 uppercase tracking-wider text-[9px] block">Order Number</span>
+                    <span className="font-mono font-bold text-slate-200 text-xs">{viewItemsOrder.orderNumber}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-slate-500 uppercase tracking-wider text-[9px] block">Order Date</span>
+                    <span className="text-slate-200 text-xs">{viewItemsOrder.date}</span>
+                  </div>
+                  <div className="space-y-1 col-span-2 border-t border-slate-900 pt-2">
+                    <span className="text-slate-500 uppercase tracking-wider text-[9px] block">Customer Identity</span>
+                    <span className="text-slate-250 font-medium text-xs block">{viewItemsOrder.userName}</span>
+                    <span className="text-slate-400 block">{viewItemsOrder.userEmail}</span>
+                    <span className="text-slate-400 block font-mono">+91 {viewItemsOrder.phone}</span>
+                  </div>
+                  <div className="space-y-1 col-span-2 border-t border-slate-900 pt-2">
+                    <span className="text-slate-500 uppercase tracking-wider text-[9px] block">Shipping Address</span>
+                    <span className="text-slate-300 leading-relaxed block">{viewItemsOrder.address}</span>
+                  </div>
+                </div>
+
+                {/* Items Breakdown list */}
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-wider text-slate-400 block">
+                    Ordered Products ({viewItemsOrder.items?.length || 0})
+                  </Label>
+                  <div className="space-y-3 bg-slate-950/65 border border-slate-800/80 rounded-xl p-4 max-h-60 overflow-y-auto">
+                    {viewItemsOrder.items && viewItemsOrder.items.map((item, idx) => {
+                      const itemPrice = item.product?.discountedPrice ?? item.product?.price ?? 0;
+                      const itemSubtotal = itemPrice * item.quantity;
+                      return (
+                        <div key={idx} className="flex gap-3 items-start border-b border-slate-900 last:border-0 pb-3 last:pb-0">
+                          {/* Product Image preview */}
+                          {item.product?.images && item.product.images.length > 0 ? (
+                            <div className="w-12 h-14 bg-slate-900 rounded border border-slate-800 overflow-hidden flex-shrink-0 relative">
+                              <img 
+                                src={item.product.images[0]} 
+                                alt={item.product.name}
+                                className="object-cover w-full h-full"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-12 h-14 bg-slate-900 rounded border border-slate-800 flex-shrink-0 flex items-center justify-center text-[9px] text-slate-650">
+                              No Pic
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <span className="text-slate-200 font-medium text-xs block leading-tight truncate" title={item.product?.name}>
+                              {item.product?.name || "Product Name"}
+                            </span>
+                            <span className="text-slate-500 block mt-0.5 text-[9px] uppercase tracking-wide">
+                              Size: {item.selectedSize} · Color: {item.selectedColor}
+                            </span>
+                            <span className="text-slate-400 block mt-1 text-[10px]">
+                              {formatPrice(itemPrice)} × {item.quantity}
+                            </span>
+                          </div>
+                          <span className="text-slate-200 font-semibold text-xs font-sans self-center">
+                            {formatPrice(itemSubtotal)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {(!viewItemsOrder.items || viewItemsOrder.items.length === 0) && (
+                      <span className="text-slate-650 italic text-xs block text-center py-4">No items details found.</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bill / Price invoice */}
+                <div className="flex justify-between items-center p-4 bg-slate-950/40 border border-slate-800/50 rounded-xl">
+                  <span className="text-slate-400 uppercase tracking-widest text-[10px] font-semibold">Total Amount Charged</span>
+                  <span className="text-lg font-bold text-slate-100 font-sans">{formatPrice(viewItemsOrder.total)}</span>
+                </div>
+
+                {/* Footer Controls */}
+                <DialogFooter className="border-t border-slate-800 pt-4 flex items-center justify-end">
+                  <Button
+                    type="button"
+                    onClick={() => setViewItemsOrder(null)}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-950 text-xs font-semibold uppercase tracking-widest px-8"
+                  >
+                    Close Invoice
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
