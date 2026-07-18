@@ -45,6 +45,19 @@ import {
 } from "firebase/firestore";
 import { Search, Loader2, RefreshCw } from "lucide-react";
 
+interface OrderItem {
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    discountedPrice?: number;
+    images: string[];
+  };
+  quantity: number;
+  selectedSize: string;
+  selectedColor: string;
+}
+
 interface Order {
   id: string;
   orderNumber: string;
@@ -56,6 +69,7 @@ interface Order {
   userId: string;
   userName: string;
   userEmail: string;
+  items?: OrderItem[];
 }
 
 const PAGE_SIZE = 20;
@@ -344,6 +358,7 @@ export default function OrdersPage() {
                 <TableRow className="hover:bg-transparent border-slate-800">
                   <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Order Number</TableHead>
                   <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Customer</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Items</TableHead>
                   <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Date</TableHead>
                   <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Total</TableHead>
                   <TableHead className="text-[10px] uppercase tracking-wider text-slate-400">Shipping Address</TableHead>
@@ -365,6 +380,23 @@ export default function OrdersPage() {
                     <TableCell className="py-4">
                       <div className="text-xs font-medium text-slate-200">{order.userName}</div>
                       <div className="text-[10px] text-slate-500 font-sans tracking-wide truncate max-w-[140px]">{order.userEmail}</div>
+                    </TableCell>
+
+                    {/* Items */}
+                    <TableCell className="py-4">
+                      <div className="space-y-1 max-w-[200px]">
+                        {order.items && order.items.map((item, idx) => (
+                          <div key={idx} className="text-[11px] leading-tight text-slate-355">
+                            <span className="font-semibold text-slate-100">{item.quantity}x</span> {item.product?.name || "Product"}
+                            <span className="text-[9px] text-slate-500 block">
+                              Size: {item.selectedSize} · Color: {item.selectedColor}
+                            </span>
+                          </div>
+                        ))}
+                        {(!order.items || order.items.length === 0) && (
+                          <span className="text-slate-600 italic text-[11px]">No items info</span>
+                        )}
+                      </div>
                     </TableCell>
 
                     {/* Date */}
@@ -469,6 +501,29 @@ export default function OrdersPage() {
                   <div className="flex justify-between">
                     <span className="text-slate-500 uppercase tracking-wider text-[10px]">Current Status:</span>
                     <span>{getStatusBadge(selectedOrder.status)}</span>
+                  </div>
+                </div>
+
+                {/* Items list */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase tracking-wider text-slate-400 block mb-1">
+                    Items List
+                  </Label>
+                  <div className="space-y-2 bg-slate-950/65 border border-slate-800/80 rounded-xl p-3 max-h-40 overflow-y-auto">
+                    {selectedOrder.items && selectedOrder.items.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-start text-[11px] border-b border-slate-900 last:border-0 pb-1.5 last:pb-0">
+                        <div>
+                          <span className="text-slate-200 font-medium">{item.product?.name || "Product"}</span>
+                          <span className="text-slate-550 block mt-0.5 text-[9px] uppercase tracking-wide">
+                            Size: {item.selectedSize} · Color: {item.selectedColor}
+                          </span>
+                        </div>
+                        <span className="text-slate-350 font-mono text-[10px]">Qty: {item.quantity}</span>
+                      </div>
+                    ))}
+                    {(!selectedOrder.items || selectedOrder.items.length === 0) && (
+                      <span className="text-slate-600 italic text-[11px]">No items info</span>
+                    )}
                   </div>
                 </div>
 
