@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { BarChart3, Save, Settings, HelpCircle, Loader2, ExternalLink } from "lucide-react";
+import { BarChart3, Save, Settings, HelpCircle, Loader2, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function AnalyticsPage() {
   const [embedUrl, setEmbedUrl] = useState("");
@@ -17,6 +17,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  const [showGlossary, setShowGlossary] = useState(true);
 
   useEffect(() => {
     async function fetchAnalyticsSettings() {
@@ -100,17 +101,107 @@ export default function AnalyticsPage() {
               Monitor active users, visitor metrics, return rates, and e-commerce conversions
             </p>
           </div>
-          {embedUrl && (
+          <div className="flex items-center gap-2">
             <Button
-              onClick={() => setShowConfig(!showConfig)}
+              onClick={() => setShowGlossary(!showGlossary)}
               variant="outline"
-              className="border-slate-800 hover:bg-slate-900 text-slate-300 text-xs uppercase tracking-wider"
+              className="border-slate-800 hover:bg-slate-900 text-slate-300 text-xs uppercase tracking-wider flex items-center gap-1.5"
             >
-              <Settings className="h-3.5 w-3.5 mr-1.5" />
-              {showConfig ? "Hide Config" : "Update Dashboard Link"}
+              <HelpCircle className="h-3.5 w-3.5" />
+              <span>{showGlossary ? "Hide Metric Guide" : "Show Metric Guide"}</span>
+              {showGlossary ? <ChevronUp className="h-3 w-3 text-slate-500" /> : <ChevronDown className="h-3 w-3 text-slate-500" />}
             </Button>
-          )}
+            {embedUrl && (
+              <Button
+                onClick={() => setShowConfig(!showConfig)}
+                variant="outline"
+                className="border-slate-800 hover:bg-slate-900 text-slate-300 text-xs uppercase tracking-wider"
+              >
+                <Settings className="h-3.5 w-3.5 mr-1.5" />
+                {showConfig ? "Hide Config" : "Update Dashboard Link"}
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Metric Explanations Glossary */}
+        {showGlossary && (
+          <div className="bg-slate-900/40 border border-slate-800/85 rounded-2xl p-5 backdrop-blur-sm transition-all duration-300">
+            <div className="flex items-start justify-between border-b border-slate-800/60 pb-3 mb-4">
+              <div>
+                <h2 className="text-sm font-semibold tracking-wider text-slate-200 uppercase flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4 text-slate-400" />
+                  Understanding Your Dashboard Metrics
+                </h2>
+                <p className="text-[11px] text-slate-500 mt-0.5 uppercase tracking-wider">
+                  A simple guide explaining the scorecards below so you can easily understand your store's traffic.
+                </p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Views */}
+              <div className="bg-slate-950/40 border border-slate-800/60 rounded-xl p-3.5 hover:border-slate-700/60 transition-all duration-300">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-xs font-semibold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">Views</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  The total number of times any page on your store was opened/loaded. If a single visitor looks at 3 different pages, it counts as 3 views.
+                </p>
+              </div>
+
+              {/* Sessions */}
+              <div className="bg-slate-950/40 border border-slate-800/60 rounded-xl p-3.5 hover:border-slate-700/60 transition-all duration-300">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-xs font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">Sessions</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  The number of individual visits to your site. A session starts when someone arrives, and ends when they close the tab or remain inactive for 30 minutes.
+                </p>
+              </div>
+
+              {/* Total Users */}
+              <div className="bg-slate-950/40 border border-slate-800/60 rounded-xl p-3.5 hover:border-slate-700/60 transition-all duration-300">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">Total Users</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  The total number of unique people who visited your website at least once. If one person visits your site multiple times, they are still counted as 1 user.
+                </p>
+              </div>
+
+              {/* Bounce Rate */}
+              <div className="bg-slate-950/40 border border-slate-800/60 rounded-xl p-3.5 hover:border-slate-700/60 transition-all duration-300">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-xs font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">Bounce Rate</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  The percentage of visitors who left your website after viewing only 1 page without clicking anything else. A lower percentage means higher visitor engagement.
+                </p>
+              </div>
+
+              {/* Average Session Duration */}
+              <div className="bg-slate-950/40 border border-slate-800/60 rounded-xl p-3.5 hover:border-slate-700/60 transition-all duration-300">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-xs font-semibold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded">Avg. Session Duration</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  The average length of time a visitor spent on your site during a single visit. For example, "03:51" means they stayed for 3 minutes and 51 seconds.
+                </p>
+              </div>
+
+              {/* New Users */}
+              <div className="bg-slate-950/40 border border-slate-800/60 rounded-xl p-3.5 hover:border-slate-700/60 transition-all duration-300">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-xs font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">New Users</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  The number of people visiting your website for the first time. This lets you see how many new prospective customers are discovering your business.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Configurations Area */}
         {(showConfig || !embedUrl) && (
