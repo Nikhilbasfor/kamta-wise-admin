@@ -1,14 +1,12 @@
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
-import { adminAuth } from "@/lib/firebaseAdmin";
+import { verifyUserToken } from "@/lib/verifyToken";
 
 const resend = new Resend(process.env.RESEND_API_KEY || "re_mock_key");
 
 export async function POST(request: Request) {
-  const authHeader = request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  try { await adminAuth.verifyIdToken(authHeader.slice(7)); }
-  catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  const user = await verifyUserToken(request);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const body = await request.json();

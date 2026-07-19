@@ -1,7 +1,4 @@
 import { NextResponse } from "next/server";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { adminAuth } from "@/lib/firebaseAdmin";
 
 export async function POST(request: Request) {
   try {
@@ -23,14 +20,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Incorrect PIN" }, { status: 401 });
     }
 
-    // Call Firebase signInWithEmailAndPassword
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const uid = userCredential.user.uid;
-
-    // Generate a secure custom token using the Firebase Admin SDK
-    const customToken = await adminAuth.createCustomToken(uid);
-
-    return NextResponse.json({ token: customToken });
+    return NextResponse.json({ email, password });
   } catch (error: any) {
     console.error("Error during admin login process:", error);
     return NextResponse.json({ error: error.message || "Authentication failed" }, { status: 500 });
